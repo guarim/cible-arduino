@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Suivi Facial</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .video-container {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+        }
+
+        #videoElement {
+            display: none;
+        }
+
+        #canvasElement {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .coordinates-container {
+            flex: 0 0 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .coordinates-container h2 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 400;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .coord-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .coord-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .coord-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status-container {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-message {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            padding: 15px 30px;
+            border-radius: 8px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .status-acquired {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4CAF50;
+            color: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-no-target {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+            color: #f44336;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(76, 175, 80, 0.8);
+            }
+        }
+
+        .arduino-status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Système de Suivi Facial Automatisé</h1>
+        
+        <div class="main-content">
+            <div class="video-container">
+                <div class="video-wrapper">
+                    <video id="videoElement" autoplay playsinline></video>
+                    <canvas id="canvasElement" width="640" height="480"></canvas>
+                </div>
+            </div>
+
+            <div class="coordinates-container">
+                <h2>Coordonnées Servo</h2>
+                <div class="coord-item">
+                    <div class="coord-label">Servo X (Pin 6)</div>
+                    <div class="coord-value" id="servoX">90°</div>
+                </div>
+                <div class="coord-item">
+                    <div class="coord-label">Servo Y (Pin 9)</div>
+                    <div class="coord-value" id="servoY">90°</div>
+                </div>
+                <div class="coord-item">
+                    <div class="coord-label">Position X</div>
+                    <div class="coord-value" id="posX">---</div>
+                </div>
+                <div class="coord-item">
+                    <div class="coord-label">Position Y</div>
+                    <div class="coord-value" id="posY">---</div>
+                </div>
+                <div class="arduino-status" id="arduinoStatus">
+                    ⚡ Arduino: Prêt
+                </div>
+            </div>
+        </div>
+
+        <div class="status-container">
+            <div class="status-message status-no-target" id="statusMessage">
+                ⚠ PAS DE CIBLE
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const VIDEO_WIDTH = 640;
+        const VIDEO_HEIGHT = 480;
+        const SERVO_MIN = 0;
+        const SERVO_MAX = 180;
+        const SERVO_CENTER = 90;
+        
+        // Elements DOM
+        const videoElement = document.getElementById('videoElement');
+        const canvasElement = document.getElementById('canvasElement');
+        const canvasCtx = canvasElement.getContext('2d');
+        const statusMessage = document.getElementById('statusMessage');
+        const servoXDisplay = document.getElementById('servoX');
+        const servoYDisplay = document.getElementById('servoY');
+        const posXDisplay = document.getElementById('posX');
+        const posYDisplay = document.getElementById('posY');
+        const arduinoStatus = document.getElementById('arduinoStatus');
+
+        let faceDetection;
+        let camera;
+        let targetAcquired = false;
+        let lastServoX = SERVO_CENTER;
+        let lastServoY = SERVO_CENTER;
+
+        // Initialisation de MediaPipe Face Detection
+        async function initFaceDetection() {
+            faceDetection = new FaceDetection({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+                }
+            });
+
+            faceDetection.setOptions({
+                model: 'short',
+                minDetectionConfidence: 0.5
+            });
+
+            faceDetection.onResults(onResults);
+
+            // Initialisation de la caméra
+            camera = new Camera(videoElement, {
+                onFrame: async () => {
+                    await faceDetection.send({image: videoElement});
+                },
+                width: VIDEO_WIDTH,
+                height: VIDEO_HEIGHT
+            });
+
+            camera.start();
+        }
+
+        // Traitement des résultats de détection
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.detections && results.detections.length > 0) {
+                targetAcquired = true;
+                const detection = results.detections[0];
+                
+                // Récupération des points clés du visage
+                const landmarks = detection.landmarks;
+                
+                // Calculer la position de la mire (entre les yeux, au-dessus des sourcils)
+                let targetX, targetY;
+                
+                if (landmarks && landmarks.length >= 6) {
+                    // Landmarks: 0=right eye, 1=left eye, 2=nose, 3=mouth, 4=right ear, 5=left ear
+                    const rightEye = landmarks[0];
+                    const leftEye = landmarks[1];
+                    
+                    // Position entre les deux yeux
+                    const eyeCenterX = (rightEye.x + leftEye.x) / 2 * VIDEO_WIDTH;
+                    const eyeCenterY = (rightEye.y + leftEye.y) / 2 * VIDEO_HEIGHT;
+                    
+                    // Décalage vers le haut (au-dessus des sourcils)
+                    const eyeDistance = Math.abs(rightEye.y - leftEye.y) * VIDEO_HEIGHT;
+                    targetX = eyeCenterX;
+                    targetY = eyeCenterY - 30; // 30 pixels au-dessus
+                } else {
+                    // Fallback: utiliser le centre du bbox
+                    const bbox = detection.boundingBox;
+                    targetX = (bbox.xCenter) * VIDEO_WIDTH;
+                    targetY = (bbox.yCenter - bbox.height * 0.2) * VIDEO_HEIGHT;
+                }
+
+                // Dessiner la mire de ciblage
+                drawCrosshair(targetX, targetY);
+
+                // Calculer les angles des servos
+                const servoX = mapToServo(targetX, VIDEO_WIDTH);
+                const servoY = mapToServo(VIDEO_HEIGHT - targetY, VIDEO_HEIGHT); // Inverser Y
+
+                // Lisser les mouvements
+                lastServoX = smoothServo(lastServoX, servoX);
+                lastServoY = smoothServo(lastServoY, servoY);
+
+                // Mettre à jour l'affichage
+                updateDisplay(targetX, targetY, lastServoX, lastServoY);
+
+                // Envoyer les commandes à l'Arduino (simulation)
+                sendToArduino(lastServoX, lastServoY);
+
+                // Mettre à jour le statut
+                statusMessage.textContent = '✓ CIBLE ACQUISE';
+                statusMessage.className = 'status-message status-acquired';
+            } else {
+                targetAcquired = false;
+                statusMessage.textContent = '⚠ PAS DE CIBLE';
+                statusMessage.className = 'status-message status-no-target';
+                
+                // Retour à la position centrale
+                lastServoX = smoothServo(lastServoX, SERVO_CENTER);
+                lastServoY = smoothServo(lastServoY, SERVO_CENTER);
+                
+                servoXDisplay.textContent = lastServoX.toFixed(0) + '°';
+                servoYDisplay.textContent = lastServoY.toFixed(0) + '°';
+                posXDisplay.textContent = '---';
+                posYDisplay.textContent = '---';
+            }
+
+            canvasCtx.restore();
+        }
+
+        // Dessiner la mire de ciblage
+        function drawCrosshair(x, y) {
+            const size = 30;
+            const thickness = 2;
+            
+            canvasCtx.strokeStyle = '#00FF00';
+            canvasCtx.lineWidth = thickness;
+            canvasCtx.shadowBlur = 10;
+            canvasCtx.shadowColor = '#00FF00';
+
+            // Cercle extérieur
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, size, 0, 2 * Math.PI);
+            canvasCtx.stroke();
+
+            // Cercle intérieur
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 5, 0, 2 * Math.PI);
+            canvasCtx.stroke();
+
+            // Croix
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(x - size - 10, y);
+            canvasCtx.lineTo(x - size, y);
+            canvasCtx.moveTo(x + size, y);
+            canvasCtx.lineTo(x + size + 10, y);
+            canvasCtx.moveTo(x, y - size - 10);
+            canvasCtx.lineTo(x, y - size);
+            canvasCtx.moveTo(x, y + size);
+            canvasCtx.lineTo(x, y + size + 10);
+            canvasCtx.stroke();
+
+            // Point central
+            canvasCtx.fillStyle = '#00FF00';
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 2, 0, 2 * Math.PI);
+            canvasCtx.fill();
+
+            canvasCtx.shadowBlur = 0;
+        }
+
+        // Mapper une position à un angle de servo
+        function mapToServo(position, maxPosition) {
+            return SERVO_MIN + (position / maxPosition) * (SERVO_MAX - SERVO_MIN);
+        }
+
+        // Lisser les mouvements du servo
+        function smoothServo(current, target, factor = 0.3) {
+            return current + (target - current) * factor;
+        }
+
+        // Mettre à jour l'affichage des coordonnées
+        function updateDisplay(x, y, servoX, servoY) {
+            servoXDisplay.textContent = servoX.toFixed(0) + '°';
+            servoYDisplay.textContent = servoY.toFixed(0) + '°';
+            posXDisplay.textContent = x.toFixed(0) + ' px';
+            posYDisplay.textContent = y.toFixed(0) + ' px';
+        }
+
+        // Envoyer les commandes à l'Arduino
+        function sendToArduino(servoX, servoY) {
+            // Simulation de l'envoi série à l'Arduino
+            // Format: "X:angle,Y:angle\n"
+            const command = `X:${Math.round(servoX)},Y:${Math.round(servoY)}\n`;
+            
+            // Dans une implémentation réelle, utilisez Web Serial API:
+            // if (port && port.writable) {
+            //     const writer = port.writable.getWriter();
+            //     await writer.write(new TextEncoder().encode(command));
+            //     writer.releaseLock();
+            // }
+            
+            // Pour le débogage
+            console.log('Arduino Command:', command);
+            arduinoStatus.textContent = `⚡ Arduino: ${command.trim()}`;
+        }
+
+        // Initialisation au chargement de la page
+        window.addEventListener('load', () => {
+            initFaceDetection();
+        });
+    </script>
+</body>
+</html>
