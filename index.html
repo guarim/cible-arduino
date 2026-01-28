@@ -549,7 +549,7 @@
 
                 // Lisser les mouvements
                 lastServoX = smoothServo(180-lastServoX, constrainedServoX);
-                lastServoY = smoothServo(180-lastServoY, constrainedServoY);
+                lastServoY = smoothServo(lastServoY, constrainedServoY);
 
                 // Mettre à jour l'affichage
                 updateDisplay(targetX, targetY, lastServoX, lastServoY, errorX, errorY);
