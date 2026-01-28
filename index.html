@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Suivi Facial</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .video-container {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+        }
+
+        #videoElement {
+            display: none;
+        }
+
+        #canvasElement {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .coordinates-container {
+            flex: 0 0 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .coordinates-container h2 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 400;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .coord-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .coord-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .coord-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status-container {
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-message {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            padding: 15px 30px;
+            border-radius: 8px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .status-acquired {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4CAF50;
+            color: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-no-target {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid #f44336;
+            color: #f44336;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(76, 175, 80, 0.8);
+            }
+        }
+
+        .arduino-status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2rem;
+        }
+
+        .controls-container {
+            width: 100%;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        select {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #1e3c72;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        select:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: #4CAF50;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: rgba(150, 150, 150, 0.5);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-disconnect {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-disconnect:hover {
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.5);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #4CAF50;
+        }
+
+        .status-dot.disconnected {
+            background: #f44336;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% {
+                box-shadow: 0 0 10px currentColor;
+            }
+            50% {
+                box-shadow: 0 0 20px currentColor;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Système de Suivi Facial Automatisé</h1>
+        
+        <div class="controls-container">
+            <div class="control-group">
+                <label for="cameraSelect">📷 Caméra:</label>
+                <select id="cameraSelect">
+                    <option value="">Chargement...</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <button id="connectArduino">🔌 Connecter Arduino</button>
+                <button id="disconnectArduino" class="btn-disconnect" style="display: none;">❌ Déconnecter</button>
+            </div>
+            
+            <div class="connection-status">
+                <div class="status-dot disconnected" id="statusDot"></div>
+                <span id="connectionStatus">Arduino non connecté</span>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="video-container">
+                <div class="video-wrapper">
+                    <video id="videoElement" autoplay playsinline></video>
+                    <canvas id="canvasElement" width="640" height="480"></canvas>
+                </div>
+            </div>
+
+            <div class="coordinates-container">
+                <h2>Coordonnées Servo</h2>
+                <div class="coord-item">
+                    <div class="coord-label">Servo X (Pin 6)</div>
+                    <div class="coord-value" id="servoX">90°</div>
+                </div>
+                <div class="coord-item">
+                    <div class="coord-label">Servo Y (Pin 9)</div>
+                    <div class="coord-value" id="servoY">90°</div>
+                </div>
+                <div class="coord-item">
+                    <div class="coord-label">Position X</div>
+                    <div class="coord-value" id="posX">---</div>
+                </div>
+                <div class="coord-item">
+                    <div class="coord-label">Position Y</div>
+                    <div class="coord-value" id="posY">---</div>
+                </div>
+                <div class="coord-item" style="border-left-color: #FF9800;">
+                    <div class="coord-label">Erreur de centrage</div>
+                    <div class="coord-value" id="errorDistance">---</div>
+                </div>
+                <div class="arduino-status" id="arduinoStatus">
+                    ⚡ Arduino: Prêt
+                </div>
+            </div>
+        </div>
+
+        <div class="status-container">
+            <div class="status-message status-no-target" id="statusMessage">
+                ⚠ PAS DE CIBLE
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const VIDEO_WIDTH = 640;
+        const VIDEO_HEIGHT = 480;
+        const SERVO_MIN = 0;
+        const SERVO_MAX = 180;
+        const SERVO_CENTER = 90;
+        
+        // Elements DOM
+        const videoElement = document.getElementById('videoElement');
+        const canvasElement = document.getElementById('canvasElement');
+        const canvasCtx = canvasElement.getContext('2d');
+        const statusMessage = document.getElementById('statusMessage');
+        const servoXDisplay = document.getElementById('servoX');
+        const servoYDisplay = document.getElementById('servoY');
+        const posXDisplay = document.getElementById('posX');
+        const posYDisplay = document.getElementById('posY');
+        const errorDistanceDisplay = document.getElementById('errorDistance');
+        const arduinoStatus = document.getElementById('arduinoStatus');
+        const cameraSelect = document.getElementById('cameraSelect');
+        const connectArduinoBtn = document.getElementById('connectArduino');
+        const disconnectArduinoBtn = document.getElementById('disconnectArduino');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const statusDot = document.getElementById('statusDot');
+
+        let faceDetection;
+        let camera;
+        let targetAcquired = false;
+        let lastServoX = SERVO_CENTER;
+        let lastServoY = SERVO_CENTER;
+        
+        // Variables pour la connexion série
+        let port;
+        let writer;
+        let reader;
+        let isConnected = false;
+        
+        // Variables pour la caméra
+        let videoDevices = [];
+        let selectedDeviceId = null;
+
+
+        // Énumérer les caméras disponibles
+        async function enumerateCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                cameraSelect.innerHTML = '';
+                
+                if (videoDevices.length === 0) {
+                    cameraSelect.innerHTML = '<option value="">Aucune caméra trouvée</option>';
+                    return;
+                }
+                
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Caméra ${index + 1}`;
+                    cameraSelect.appendChild(option);
+                });
+                
+                // Sélectionner la deuxième caméra par défaut si disponible
+                if (videoDevices.length > 1) {
+                    selectedDeviceId = videoDevices[1].deviceId;
+                    cameraSelect.value = selectedDeviceId;
+                } else {
+                    selectedDeviceId = videoDevices[0].deviceId;
+                }
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'énumération des caméras:', error);
+                cameraSelect.innerHTML = '<option value="">Erreur de détection</option>';
+            }
+        }
+        
+        // Changer de caméra
+        cameraSelect.addEventListener('change', async (e) => {
+            selectedDeviceId = e.target.value;
+            if (camera) {
+                camera.stop();
+            }
+            await initFaceDetection();
+        });
+
+        // Initialisation de MediaPipe Face Detection
+        async function initFaceDetection() {
+            faceDetection = new FaceDetection({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+                }
+            });
+
+            faceDetection.setOptions({
+                model: 'short',
+                minDetectionConfidence: 0.5
+            });
+
+            faceDetection.onResults(onResults);
+
+            // Initialisation de la caméra avec le device sélectionné
+            const constraints = {
+                video: {
+                    width: VIDEO_WIDTH,
+                    height: VIDEO_HEIGHT
+                }
+            };
+            
+            if (selectedDeviceId) {
+                constraints.video.deviceId = { exact: selectedDeviceId };
+            }
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoElement.srcObject = stream;
+                
+                camera = new Camera(videoElement, {
+                    onFrame: async () => {
+                        await faceDetection.send({image: videoElement});
+                    },
+                    width: VIDEO_WIDTH,
+                    height: VIDEO_HEIGHT
+                });
+
+                camera.start();
+            } catch (error) {
+                console.error('Erreur d\'accès à la caméra:', error);
+                alert('Impossible d\'accéder à la caméra sélectionnée. Vérifiez les permissions.');
+            }
+        }
+
+        // Traitement des résultats de détection
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            // Dessiner la mire bleue centrale (référence fixe)
+            drawCenterCrosshair();
+
+            if (results.detections && results.detections.length > 0) {
+                targetAcquired = true;
+                const detection = results.detections[0];
+                
+                // Récupération des points clés du visage
+                const landmarks = detection.landmarks;
+                
+                // Calculer la position de la mire verte (entre les yeux, au-dessus des sourcils)
+                let targetX, targetY;
+                
+                if (landmarks && landmarks.length >= 6) {
+                    // Landmarks: 0=right eye, 1=left eye, 2=nose, 3=mouth, 4=right ear, 5=left ear
+                    const rightEye = landmarks[0];
+                    const leftEye = landmarks[1];
+                    
+                    // Position entre les deux yeux
+                    const eyeCenterX = (rightEye.x + leftEye.x) / 2 * VIDEO_WIDTH;
+                    const eyeCenterY = (rightEye.y + leftEye.y) / 2 * VIDEO_HEIGHT;
+                    
+                    // Décalage vers le haut (au-dessus des sourcils)
+                    const eyeDistance = Math.abs(rightEye.y - leftEye.y) * VIDEO_HEIGHT;
+                    targetX = eyeCenterX;
+                    targetY = eyeCenterY - 30; // 30 pixels au-dessus
+                } else {
+                    // Fallback: utiliser le centre du bbox
+                    const bbox = detection.boundingBox;
+                    targetX = (bbox.xCenter) * VIDEO_WIDTH;
+                    targetY = (bbox.yCenter - bbox.height * 0.2) * VIDEO_HEIGHT;
+                }
+
+                // Dessiner la mire de ciblage verte sur le visage
+                drawTargetCrosshair(targetX, targetY);
+
+                // Calculer l'écart entre la mire verte (visage) et la mire bleue (centre)
+                const centerX = VIDEO_WIDTH / 2;
+                const centerY = VIDEO_HEIGHT / 2;
+                
+                // Calcul de l'erreur (différence entre position actuelle et centre)
+                const errorX = targetX - centerX;
+                const errorY = targetY - centerY;
+                
+                // Calculer les angles des servos pour ramener la mire verte vers la mire bleue
+                // Si la cible est à droite du centre, le servo doit tourner à droite (augmenter l'angle)
+                // Si la cible est en haut, le servo doit tourner vers le haut (diminuer l'angle)
+                const servoX = SERVO_CENTER + (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
+                const servoY = SERVO_CENTER - (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
+                
+                // Contraindre les angles dans les limites
+                const constrainedServoX = Math.max(SERVO_MIN, Math.min(SERVO_MAX, servoX));
+                const constrainedServoY = Math.max(SERVO_MIN, Math.min(SERVO_MAX, servoY));
+
+                // Lisser les mouvements
+                lastServoX = smoothServo(lastServoX, constrainedServoX);
+                lastServoY = smoothServo(lastServoY, constrainedServoY);
+
+                // Mettre à jour l'affichage
+                updateDisplay(targetX, targetY, lastServoX, lastServoY, errorX, errorY);
+
+                // Envoyer les commandes à l'Arduino
+                sendToArduino(lastServoX, lastServoY);
+
+                // Mettre à jour le statut
+                statusMessage.textContent = '✓ CIBLE ACQUISE';
+                statusMessage.className = 'status-message status-acquired';
+            } else {
+                targetAcquired = false;
+                statusMessage.textContent = '⚠ PAS DE CIBLE';
+                statusMessage.className = 'status-message status-no-target';
+                
+                // Retour à la position centrale
+                lastServoX = smoothServo(lastServoX, SERVO_CENTER);
+                lastServoY = smoothServo(lastServoY, SERVO_CENTER);
+                
+                servoXDisplay.textContent = lastServoX.toFixed(0) + '°';
+                servoYDisplay.textContent = lastServoY.toFixed(0) + '°';
+                posXDisplay.textContent = '---';
+                posYDisplay.textContent = '---';
+                errorDistanceDisplay.textContent = '---';
+                errorDistanceDisplay.style.color = '#fff';
+            }
+
+            canvasCtx.restore();
+        }
+
+        // Dessiner la mire bleue centrale (référence fixe)
+        function drawCenterCrosshair() {
+            const x = VIDEO_WIDTH / 2;
+            const y = VIDEO_HEIGHT / 2;
+            const size = 30;
+            const thickness = 2;
+            
+            canvasCtx.strokeStyle = '#0088FF';
+            canvasCtx.lineWidth = thickness;
+            canvasCtx.shadowBlur = 10;
+            canvasCtx.shadowColor = '#0088FF';
+
+            // Cercle extérieur
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, size, 0, 2 * Math.PI);
+            canvasCtx.stroke();
+
+            // Cercle intérieur
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 5, 0, 2 * Math.PI);
+            canvasCtx.stroke();
+
+            // Croix
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(x - size - 10, y);
+            canvasCtx.lineTo(x - size, y);
+            canvasCtx.moveTo(x + size, y);
+            canvasCtx.lineTo(x + size + 10, y);
+            canvasCtx.moveTo(x, y - size - 10);
+            canvasCtx.lineTo(x, y - size);
+            canvasCtx.moveTo(x, y + size);
+            canvasCtx.lineTo(x, y + size + 10);
+            canvasCtx.stroke();
+
+            // Point central
+            canvasCtx.fillStyle = '#0088FF';
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 2, 0, 2 * Math.PI);
+            canvasCtx.fill();
+
+            // Texte indicatif
+            canvasCtx.font = 'bold 12px Arial';
+            canvasCtx.fillStyle = '#0088FF';
+            canvasCtx.fillText('CENTRE', x - 25, y + size + 20);
+
+            canvasCtx.shadowBlur = 0;
+        }
+
+        // Dessiner la mire de ciblage verte (sur le visage)
+        function drawTargetCrosshair(x, y) {
+            const size = 30;
+            const thickness = 2;
+            
+            canvasCtx.strokeStyle = '#00FF00';
+            canvasCtx.lineWidth = thickness;
+            canvasCtx.shadowBlur = 10;
+            canvasCtx.shadowColor = '#00FF00';
+
+            // Cercle extérieur
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, size, 0, 2 * Math.PI);
+            canvasCtx.stroke();
+
+            // Cercle intérieur
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 5, 0, 2 * Math.PI);
+            canvasCtx.stroke();
+
+            // Croix
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(x - size - 10, y);
+            canvasCtx.lineTo(x - size, y);
+            canvasCtx.moveTo(x + size, y);
+            canvasCtx.lineTo(x + size + 10, y);
+            canvasCtx.moveTo(x, y - size - 10);
+            canvasCtx.lineTo(x, y - size);
+            canvasCtx.moveTo(x, y + size);
+            canvasCtx.lineTo(x, y + size + 10);
+            canvasCtx.stroke();
+
+            // Point central
+            canvasCtx.fillStyle = '#00FF00';
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 2, 0, 2 * Math.PI);
+            canvasCtx.fill();
+
+            // Ligne de connexion entre les deux mires
+            const centerX = VIDEO_WIDTH / 2;
+            const centerY = VIDEO_HEIGHT / 2;
+            canvasCtx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+            canvasCtx.lineWidth = 1;
+            canvasCtx.setLineDash([5, 5]);
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(centerX, centerY);
+            canvasCtx.lineTo(x, y);
+            canvasCtx.stroke();
+            canvasCtx.setLineDash([]);
+
+            // Texte indicatif
+            canvasCtx.font = 'bold 12px Arial';
+            canvasCtx.fillStyle = '#00FF00';
+            canvasCtx.fillText('CIBLE', x - 20, y + size + 20);
+
+            canvasCtx.shadowBlur = 0;
+        }
+
+        // Lisser les mouvements du servo
+        function smoothServo(current, target, factor = 0.3) {
+            return current + (target - current) * factor;
+        }
+
+        // Mettre à jour l'affichage des coordonnées
+        function updateDisplay(x, y, servoX, servoY, errorX, errorY) {
+            servoXDisplay.textContent = servoX.toFixed(0) + '°';
+            servoYDisplay.textContent = servoY.toFixed(0) + '°';
+            posXDisplay.textContent = x.toFixed(0) + ' px';
+            posYDisplay.textContent = y.toFixed(0) + ' px';
+            
+            // Afficher l'erreur de centrage
+            const distanceFromCenter = Math.sqrt(errorX * errorX + errorY * errorY).toFixed(0);
+            errorDistanceDisplay.textContent = distanceFromCenter + ' px';
+            
+            // Changer la couleur en fonction de la précision
+            if (distanceFromCenter < 20) {
+                errorDistanceDisplay.style.color = '#4CAF50'; // Vert - très précis
+            } else if (distanceFromCenter < 50) {
+                errorDistanceDisplay.style.color = '#FF9800'; // Orange - moyen
+            } else {
+                errorDistanceDisplay.style.color = '#f44336'; // Rouge - imprécis
+            }
+            
+            // Mise à jour du statut Arduino
+            if (isConnected) {
+                arduinoStatus.textContent = `⚡ Erreur: ${distanceFromCenter}px | X:${servoX.toFixed(0)}° Y:${servoY.toFixed(0)}°`;
+            }
+        }
+
+        // Connexion au port série Arduino
+        async function connectArduino() {
+            try {
+                // Demander à l'utilisateur de sélectionner le port série
+                port = await navigator.serial.requestPort();
+                
+                // Ouvrir le port avec le baud rate de l'Arduino
+                await port.open({ baudRate: 9600 });
+                
+                // Configuration du writer pour envoyer des données
+                const textEncoder = new TextEncoderStream();
+                const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+                writer = textEncoder.writable.getWriter();
+                
+                // Configuration du reader pour recevoir des données
+                const textDecoder = new TextDecoderStream();
+                const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                reader = textDecoder.readable.getReader();
+                
+                isConnected = true;
+                updateConnectionUI(true);
+                
+                // Lire les données de l'Arduino en continu
+                readArduinoData();
+                
+                console.log('Arduino connecté avec succès');
+                
+            } catch (error) {
+                console.error('Erreur de connexion à l\'Arduino:', error);
+                alert('Erreur de connexion. Assurez-vous que:\n- Le port série est disponible\n- L\'Arduino est branché\n- Aucun autre programme n\'utilise le port');
+                updateConnectionUI(false);
+            }
+        }
+        
+        // Déconnexion du port série
+        async function disconnectArduino() {
+            try {
+                if (reader) {
+                    await reader.cancel();
+                    reader = null;
+                }
+                
+                if (writer) {
+                    await writer.close();
+                    writer = null;
+                }
+                
+                if (port) {
+                    await port.close();
+                    port = null;
+                }
+                
+                isConnected = false;
+                updateConnectionUI(false);
+                
+                console.log('Arduino déconnecté');
+                
+            } catch (error) {
+                console.error('Erreur lors de la déconnexion:', error);
+            }
+        }
+        
+        // Lecture des données de l'Arduino
+        async function readArduinoData() {
+            try {
+                while (isConnected && reader) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    if (value) {
+                        // Afficher les messages de l'Arduino dans la console
+                        console.log('Arduino:', value.trim());
+                    }
+                }
+            } catch (error) {
+                if (isConnected) {
+                    console.error('Erreur de lecture:', error);
+                }
+            }
+        }
+        
+        // Mettre à jour l'interface de connexion
+        function updateConnectionUI(connected) {
+            if (connected) {
+                connectArduinoBtn.style.display = 'none';
+                disconnectArduinoBtn.style.display = 'inline-block';
+                connectionStatus.textContent = 'Arduino connecté';
+                statusDot.classList.remove('disconnected');
+                statusDot.classList.add('connected');
+                arduinoStatus.textContent = '⚡ Arduino: Connecté et prêt';
+            } else {
+                connectArduinoBtn.style.display = 'inline-block';
+                disconnectArduinoBtn.style.display = 'none';
+                connectionStatus.textContent = 'Arduino non connecté';
+                statusDot.classList.remove('connected');
+                statusDot.classList.add('disconnected');
+                arduinoStatus.textContent = '⚠ Arduino: Déconnecté';
+            }
+        }
+        
+        // Gestionnaires d'événements pour les boutons
+        connectArduinoBtn.addEventListener('click', connectArduino);
+        disconnectArduinoBtn.addEventListener('click', disconnectArduino);
+
+        // Envoyer les commandes à l'Arduino
+        async function sendToArduino(servoX, servoY) {
+            const command = `X:${Math.round(servoX)},Y:${Math.round(servoY)}\n`;
+            
+            if (isConnected && writer) {
+                try {
+                    await writer.write(command);
+                    // Mise à jour du statut uniquement si connecté
+                    arduinoStatus.textContent = `⚡ Arduino: ${command.trim()}`;
+                } catch (error) {
+                    console.error('Erreur d\'envoi:', error);
+                    // Tentative de reconnexion si erreur
+                    isConnected = false;
+                    updateConnectionUI(false);
+                }
+            } else {
+                // Simulation si non connecté (affichage console uniquement)
+                console.log('Simulation Arduino:', command);
+            }
+        }
+
+        // Initialisation au chargement de la page
+        window.addEventListener('load', async () => {
+            // Vérifier si Web Serial API est disponible
+            if (!('serial' in navigator)) {
+                alert('Web Serial API non disponible.\nUtilisez Chrome ou Edge pour connecter l\'Arduino.\nLa détection de visage fonctionnera en mode simulation.');
+                connectArduinoBtn.disabled = true;
+                connectArduinoBtn.textContent = '🔌 Serial API non disponible';
+            }
+            
+            // Énumérer les caméras disponibles
+            await enumerateCameras();
+            
+            // Initialiser la détection de visage
+            await initFaceDetection();
+        });
+        
+        // Nettoyage lors de la fermeture de la page
+        window.addEventListener('beforeunload', async () => {
+            if (isConnected) {
+                await disconnectArduino();
+            }
+        });
+    </script>
+</body>
+</html>
