@@ -548,7 +548,7 @@
                 const constrainedServoY = Math.max(SERVO_MIN, Math.min(SERVO_MAX, servoY));
 
                 // Lisser les mouvements
-                lastServoX = smoothServo(180-lastServoX, constrainedServoX);
+                lastServoX = smoothServo(lastServoX, constrainedServoX);
                 lastServoY = smoothServo(lastServoY, constrainedServoY);
 
                 // Mettre à jour l'affichage
