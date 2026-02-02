@@ -542,8 +542,8 @@
                 // Si la cible est en haut, le servo doit tourner vers le haut (diminuer l'angle)
                 //const servoX = SERVO_CENTER + (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
                 //const servoY = SERVO_CENTER + (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
-                const servoX = SERVO_CENTER + (errorx * 0.28125) ;
-                const servoY = SERVO_CENTER + (errorY * 0.5625);
+                const servoX = SERVO_CENTER + Math.round(errorx * 0.28125);
+                const servoY = SERVO_CENTER + Math.round(errorY * 0.5625);
                 
                 // Contraindre les angles dans les limites
                 const constrainedServoX = Math.max(SERVO_MIN, Math.min(SERVO_MAX, servoX));
