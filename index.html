@@ -540,7 +540,7 @@
                 // Calculer les angles des servos pour ramener la mire verte vers la mire bleue
                 // Si la cible est à droite du centre, le servo doit tourner à droite (augmenter l'angle)
                 // Si la cible est en haut, le servo doit tourner vers le haut (diminuer l'angle)
-                const servoX = SERVO_CENTER - (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
+                const servoX = SERVO_CENTER + (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
                 const servoY = SERVO_CENTER + (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
                 
                 // Contraindre les angles dans les limites
