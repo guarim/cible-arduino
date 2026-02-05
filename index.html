@@ -539,17 +539,17 @@
                 
                 // Calculer les angles des servos pour ramener la mire verte vers la mire bleue
                 // Si la cible est à droite du centre, le servo doit tourner à droite (augmenter l'angle)
-                if ErrorX >= 20 {
+                if (ErrorX >= 20) {
                     const servoX = SERVO_CENTER - 1 * (SERVO_MAX - SERVO_MIN);
                  }
-                if ErrorX <= -20 {
+                if (ErrorX <= -20) {
                     const servoX = SERVO_CENTER - 1 * (SERVO_MAX - SERVO_MIN);
                  }
                 // Si la cible est en haut, le servo doit tourner vers le haut (diminuer l'angle)
-                if ErrorY >= 20 {
+                if (ErrorY >= 20) {
                     const servoY = SERVO_CENTER + 1 * (SERVO_MAX - SERVO_MIN);
                 }
-                if ErrorY <= -20 {
+                if (ErrorY <= -20) {
                     const servoY = SERVO_CENTER - 1 * (SERVO_MAX - SERVO_MIN);
                 }
                 //const servoX = SERVO_CENTER + Math.round(errorx * 0.28125);
