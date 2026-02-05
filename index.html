@@ -704,8 +704,8 @@
             // Afficher l'erreur de centrage
             const distanceFromCenter = Math.sqrt(errorX * errorX + errorY * errorY).toFixed(0);
             //errorDistanceDisplay.textContent = distanceFromCenter + ' px';
-            errorDistanceDisplay.textContent = (errorX + ':' + errorY;
-            
+            errorDistanceDisplay.textContent = errorX + ':' + errorY;
+                                                        
             // Changer la couleur en fonction de la précision
             if (distanceFromCenter < 20) {
                 errorDistanceDisplay.style.color = '#4CAF50'; // Vert - très précis
