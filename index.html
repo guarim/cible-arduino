@@ -704,7 +704,7 @@
             // Afficher l'erreur de centrage
             const distanceFromCenter = Math.sqrt(errorX * errorX + errorY * errorY).toFixed(0);
             //errorDistanceDisplay.textContent = distanceFromCenter + ' px';
-            errorDistanceDisplay.textContent = errorX + ':' + errorY;
+            errorDistanceDisplay.textContent = Math.round(errorX) + ':' + Math.round(errorY);
                                                         
             // Changer la couleur en fonction de la précision
             if (distanceFromCenter < 20) {
@@ -828,7 +828,8 @@
 
         // Envoyer les commandes à l'Arduino
         async function sendToArduino(servoX, servoY) {
-            const command = `X:${Math.round(servoX)},Y:${Math.round(servoY)}\n`;
+            //const command = `X:${Math.round(servoX)},Y:${Math.round(servoY)}\n`;
+            const command = `X:${Math.round(errorX)},Y:${Math.round(errorY)}\n`;
             
             if (isConnected && writer) {
                 try {
