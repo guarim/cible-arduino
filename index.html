@@ -557,7 +557,8 @@
                 updateDisplay(targetX, targetY, lastServoX, lastServoY, errorX, errorY);
 
                 // Envoyer les commandes à l'Arduino
-                sendToArduino(lastServoX, lastServoY);
+                //sendToArduino(lastServoX, lastServoY);
+                sendToArduino(errorX, errorY);
 
                 // Mettre à jour le statut
                 statusMessage.textContent = '✓ CIBLE ACQUISE';
@@ -702,7 +703,8 @@
             
             // Afficher l'erreur de centrage
             const distanceFromCenter = Math.sqrt(errorX * errorX + errorY * errorY).toFixed(0);
-            errorDistanceDisplay.textContent = distanceFromCenter + ' px';
+            //errorDistanceDisplay.textContent = distanceFromCenter + ' px';
+            errorDistanceDisplay.textContent = (errorX + ':' + errorY;
             
             // Changer la couleur en fonction de la précision
             if (distanceFromCenter < 20) {
