@@ -362,7 +362,7 @@
         const VIDEO_HEIGHT = 480;
         const SERVO_MIN = 0;
         const SERVO_MAX = 180;
-        const SERVO_CENTER = 45;
+        const SERVO_CENTER = 40;
         
         // Elements DOM
         const videoElement = document.getElementById('videoElement');
@@ -540,8 +540,8 @@
                 // Calculer les angles des servos pour ramener la mire verte vers la mire bleue
                 // Si la cible est à droite du centre, le servo doit tourner à droite (augmenter l'angle)
                 // Si la cible est en haut, le servo doit tourner vers le haut (diminuer l'angle)
-                const servoX = SERVO_CENTER + (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
-                const servoY = SERVO_CENTER + (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
+                const servoX = SERVO_CENTER - (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
+                const servoY = SERVO_CENTER - (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
                 //const servoX = SERVO_CENTER + Math.round(errorx * 0.28125);
                 //const servoY = SERVO_CENTER + Math.round(errorY * 0.5625);
                 
@@ -828,8 +828,8 @@
 
         // Envoyer les commandes à l'Arduino
         async function sendToArduino(errorX, errorY) {
-            //const command = `X:${Math.round(servoX)},Y:${Math.round(servoY)}\n`;
-            const command = `X:${Math.round(errorX)},Y:${Math.round(errorY)}\n`;
+            const command = `X:${Math.round(servoX)},Y:${Math.round(servoY)}\n`;
+            //const command = `X:${Math.round(errorX)},Y:${Math.round(errorY)}\n`;
             
             if (isConnected && writer) {
                 try {
