@@ -827,7 +827,7 @@
         disconnectArduinoBtn.addEventListener('click', disconnectArduino);
 
         // Envoyer les commandes à l'Arduino
-        async function sendToArduino(servoX, servoY) {
+        async function sendToArduino(errorX, errorY) {
             //const command = `X:${Math.round(servoX)},Y:${Math.round(servoY)}\n`;
             const command = `X:${Math.round(errorX)},Y:${Math.round(errorY)}\n`;
             
