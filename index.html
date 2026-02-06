@@ -38,7 +38,7 @@
         .main-content {
             display: flex;
             gap: 20px;
-            margin-bottom: 20px;          
+            margin-bottom: 20px;
         }
 
         .video-container {
@@ -292,7 +292,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎯 Système de Suivi Facial Automatisé -- M Guarim</h1>
+        <h1>🎯 Système de Suivi Facial Automatisé</h1>
         
         <div class="controls-container">
             <div class="control-group">
@@ -324,11 +324,11 @@
             <div class="coordinates-container">
                 <h2>Coordonnées Servo</h2>
                 <div class="coord-item">
-                    <div class="coord-label">Servo X (Pin 9)</div>
+                    <div class="coord-label">Servo X (Pin 6)</div>
                     <div class="coord-value" id="servoX">90°</div>
                 </div>
                 <div class="coord-item">
-                    <div class="coord-label">Servo Y (Pin 6)</div>
+                    <div class="coord-label">Servo Y (Pin 9)</div>
                     <div class="coord-value" id="servoY">90°</div>
                 </div>
                 <div class="coord-item">
@@ -362,7 +362,7 @@
         const VIDEO_HEIGHT = 480;
         const SERVO_MIN = 0;
         const SERVO_MAX = 180;
-        const SERVO_CENTER = 50;
+        const SERVO_CENTER = 90;
         
         // Elements DOM
         const videoElement = document.getElementById('videoElement');
@@ -518,7 +518,7 @@
                     // Décalage vers le haut (au-dessus des sourcils)
                     const eyeDistance = Math.abs(rightEye.y - leftEye.y) * VIDEO_HEIGHT;
                     targetX = eyeCenterX;
-                    targetY = eyeCenterY - 90; // 90 pixels au-dessus
+                    targetY = eyeCenterY - 30; // 30 pixels au-dessus
                 } else {
                     // Fallback: utiliser le centre du bbox
                     const bbox = detection.boundingBox;
@@ -539,21 +539,9 @@
                 
                 // Calculer les angles des servos pour ramener la mire verte vers la mire bleue
                 // Si la cible est à droite du centre, le servo doit tourner à droite (augmenter l'angle)
-                if (errorX >= 20) {
-                    const servoX = SERVO_CENTER - 1 * (SERVO_MAX - SERVO_MIN);
-                 }
-                if (errorX <= -20) {
-                    const servoX = SERVO_CENTER - 1 * (SERVO_MAX - SERVO_MIN);
-                 }
                 // Si la cible est en haut, le servo doit tourner vers le haut (diminuer l'angle)
-                if (errorY >= 20) {
-                    const servoY = SERVO_CENTER + 1 * (SERVO_MAX - SERVO_MIN);
-                }
-                if (errorY <= -20) {
-                    const servoY = SERVO_CENTER - 1 * (SERVO_MAX - SERVO_MIN);
-                }
-                //const servoX = SERVO_CENTER + Math.round(errorx * 0.28125);
-                //const servoY = SERVO_CENTER + Math.round(errorY * 0.5625);
+                const servoX = SERVO_CENTER + (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
+                const servoY = SERVO_CENTER - (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
                 
                 // Contraindre les angles dans les limites
                 const constrainedServoX = Math.max(SERVO_MIN, Math.min(SERVO_MAX, servoX));
@@ -567,8 +555,7 @@
                 updateDisplay(targetX, targetY, lastServoX, lastServoY, errorX, errorY);
 
                 // Envoyer les commandes à l'Arduino
-                //sendToArduino(lastServoX, lastServoY);
-                sendToArduino(errorX, errorY);
+                sendToArduino(lastServoX, lastServoY);
 
                 // Mettre à jour le statut
                 statusMessage.textContent = '✓ CIBLE ACQUISE';
@@ -713,9 +700,8 @@
             
             // Afficher l'erreur de centrage
             const distanceFromCenter = Math.sqrt(errorX * errorX + errorY * errorY).toFixed(0);
-            //errorDistanceDisplay.textContent = distanceFromCenter + ' px';
-            errorDistanceDisplay.textContent = Math.round(errorX) + ':' + Math.round(errorY);
-                                                        
+            errorDistanceDisplay.textContent = distanceFromCenter + ' px';
+            
             // Changer la couleur en fonction de la précision
             if (distanceFromCenter < 20) {
                 errorDistanceDisplay.style.color = '#4CAF50'; // Vert - très précis
@@ -837,9 +823,8 @@
         disconnectArduinoBtn.addEventListener('click', disconnectArduino);
 
         // Envoyer les commandes à l'Arduino
-        async function sendToArduino(errorX, errorY) {
+        async function sendToArduino(servoX, servoY) {
             const command = `X:${Math.round(servoX)},Y:${Math.round(servoY)}\n`;
-            //const command = `X:${Math.round(errorX)},Y:${Math.round(errorY)}\n`;
             
             if (isConnected && writer) {
                 try {
