@@ -362,7 +362,8 @@
         const VIDEO_HEIGHT = 480;
         const SERVO_MIN = 0;
         const SERVO_MAX = 180;
-        const SERVO_CENTER = 90;
+        const SERVO_CENTERX = 90;
+         const SERVO_CENTERY = 20;
         
         // Elements DOM
         const videoElement = document.getElementById('videoElement');
@@ -384,8 +385,8 @@
         let faceDetection;
         let camera;
         let targetAcquired = false;
-        let lastServoX = SERVO_CENTER;
-        let lastServoY = SERVO_CENTER;
+        let lastServoX = SERVO_CENTERX;
+        let lastServoY = SERVO_CENTERY;
         
         // Variables pour la connexion série
         let port;
@@ -540,8 +541,8 @@
                 // Calculer les angles des servos pour ramener la mire verte vers la mire bleue
                 // Si la cible est à droite du centre, le servo doit tourner à droite (augmenter l'angle)
                 // Si la cible est en haut, le servo doit tourner vers le haut (diminuer l'angle)
-                const servoX = SERVO_CENTER - (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
-                const servoY = SERVO_CENTER + (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
+                const servoX = SERVO_CENTERX - (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
+                const servoY = SERVO_CENTERY + (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
                 
                 // Contraindre les angles dans les limites
                 const constrainedServoX = Math.max(SERVO_MIN, Math.min(SERVO_MAX, servoX));
@@ -566,8 +567,8 @@
                 statusMessage.className = 'status-message status-no-target';
                 
                 // Retour à la position centrale
-                lastServoX = smoothServo(lastServoX, SERVO_CENTER);
-                lastServoY = smoothServo(lastServoY, SERVO_CENTER);
+                lastServoX = smoothServo(lastServoX, SERVO_CENTERX);
+                lastServoY = smoothServo(lastServoY, SERVO_CENTERY);
                 
                 servoXDisplay.textContent = lastServoX.toFixed(0) + '°';
                 servoYDisplay.textContent = lastServoY.toFixed(0) + '°';
