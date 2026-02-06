@@ -363,7 +363,7 @@
         const SERVO_MIN = 0;
         const SERVO_MAX = 180;
         const SERVO_CENTERX = 90;
-         const SERVO_CENTERY = 20;
+         const SERVO_CENTERY = 30;
         
         // Elements DOM
         const videoElement = document.getElementById('videoElement');
@@ -541,8 +541,8 @@
                 // Calculer les angles des servos pour ramener la mire verte vers la mire bleue
                 // Si la cible est à droite du centre, le servo doit tourner à droite (augmenter l'angle)
                 // Si la cible est en haut, le servo doit tourner vers le haut (diminuer l'angle)
-                const servoX = SERVO_CENTERX - (errorX / VIDEO_WIDTH) * (SERVO_MAX - SERVO_MIN);
-                const servoY = SERVO_CENTERY + (errorY / VIDEO_HEIGHT) * (SERVO_MAX - SERVO_MIN);
+                const servoX = SERVO_CENTERX - (errorX / (VIDEO_WIDTH/2)) * (SERVO_MAX - SERVO_MIN);
+                const servoY = SERVO_CENTERY + (errorY / (VIDEO_HEIGHT/2)) * (SERVO_MAX - SERVO_MIN);
                 
                 // Contraindre les angles dans les limites
                 const constrainedServoX = Math.max(SERVO_MIN, Math.min(SERVO_MAX, servoX));
